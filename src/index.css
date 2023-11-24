@@ -1,0 +1,80 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.loader{
+  background-color: #F0E797;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+}
+
+.loader:nth-child(1){
+  animation: pulse 2s infinite;
+}
+
+.loader:nth-child(2){
+  animation: pulse 2s infinite .3s;
+}
+
+.loader:nth-child(3){
+  animation: pulse 2s infinite .6s;
+}
+
+.loader:nth-child(4){
+  text-align: center;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  color: #22475E;
+  font-size: 14px;
+  line-height: 80px;
+  width: 80px;
+  height: 80px;
+}
+
+@keyframes pulse {
+  0%{transform:scale(.1);opacity: 0;}
+  50%{ opacity: .4;}
+  100%{transform: scale(1.6); opacity: 0;}
+}
+
+.bg-img{
+  background: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)),url('../public/bg-img.jpeg');
+}
+
+.bg-white-low{
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.main-transition{
+  transition: 0.3s ease-in-out all;
+}
+
+.shimmer-effect {
+  color: grey;
+  display: inline-block;
+  /* adding gradients */
+  -webkit-mask: linear-gradient(120deg, #000 25%, #0005, #000 75%) right/250% 100%;
+  /* shimmer effect animation */
+  animation: shimmer 2.5s infinite;
+  background-repeat: no-repeat;
+}
+@keyframes shimmer {
+  100% {
+     /* setting up mask position at left side */
+     -webkit-mask-position: left
+  }
+}

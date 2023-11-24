@@ -1,0 +1,1 @@
+export {default as Scissors} from '../public/scissors.png'
