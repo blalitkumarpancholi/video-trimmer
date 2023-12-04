@@ -4,6 +4,8 @@ import ReactPlayer from 'react-player';
 import { VideoToFrames,VideoToFramesMethod } from './VideoToFrame.ts';
 import { FFmpeg} from '@ffmpeg/ffmpeg';
 import { toBlobURL, fetchFile, } from "@ffmpeg/util";
+import * as helpers from '../utils/helpers.js'
+import RangeInput from './RangeInput.js';
 
 function Video() {
   const [videoURL, setVideoURL] = useState(null);
@@ -14,16 +16,16 @@ function Video() {
   const fileInputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const messageRef = useRef(null);
+  const [showTrimVideo,setShowTrimVideo] = useState(false)
+  const [rStart, setRstart] = useState(0);
+  const [rEnd, setRend] = useState(10);
   const videoRef = useRef(null)
+  const [thumbnailIsProcessing, setThumbnailIsProcessing] = useState(false);
   const [videoMeta, setVideoMeta] = useState(null);
-  const [thumbnails,setThumbnails] = useState([])
   const [thumbNails,setThumbNails] = useState([])
   const [trimVideo,setTrimVideo] = useState(null)
-  const [showTrimVideo,setShowTrimVideo] = useState(false)
-  const [startTime, setStartTime] = useState(0);
-  const [endTime, setEndTime] = useState(100);
-
   const ffmpegRef = useRef(new FFmpeg())
+
 
   const load = async () => {
     setLoaded(true)
@@ -40,23 +42,52 @@ function Video() {
     })
   }
 
-  const transcode = async () => {
-    await load()
-    setShowTrimVideo(false)
-    const ffmpeg = ffmpegRef.current
-    // u can use 'https://ffmpegwasm.netlify.app/video/video-15s.avi' to download the video to public folder for testing
-    await ffmpeg.writeFile('input.mp4', await fetchFile(videoURL))
-    await ffmpeg.exec(['-i', 'input.mp4','-ss','00:00:05', '-t','00:00:10','output.mp4'])
+  // const transcode = async () => {
+  //   await load()
+  //   setShowTrimVideo(false)
+  //   let startTime = ((rStart/100) * videoMeta.duration).toFixed(0)
+  //   let offsetTime = ((rEnd/100) * videoMeta.duration).toFixed(0)
+  //   const ffmpeg = ffmpegRef.current
+  //   console.log(helpers.toTimeString(startTime))
+  //   console.log(helpers.toTimeString(offsetTime))
+  //   // u can use 'https://ffmpegwasm.netlify.app/video/video-15s.avi' to download the video to public folder for testing
+  //   await ffmpeg.writeFile('input.mp4', await fetchFile(videoURL))
+  //   await ffmpeg.exec(['-i', 'input.mp4','-ss',helpers.toTimeString(startTime), '-t',helpers.toTimeString(offsetTime),'output.mp4'])
 
-    const data = (await ffmpeg.readFile('output.mp4'))
-    if (videoRef.current)
-      videoRef.current.src = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }))
-    setTrimVideo(URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' })))
-      setLoaded(false)
-      setShowTrimVideo(true)
+  //   const data = (await ffmpeg.readFile('output.mp4'))
+  //   if (videoRef.current)
+  //   setTrimVideo(URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' })))
+  //     setLoaded(false)
+  //     setShowTrimVideo(true)
 
     
-  }
+  // }
+
+  const transcode = async () => {
+    await load();
+    setShowTrimVideo(false);
+  
+    const startTime = (rStart / 100) * videoMeta.duration;
+    const duration = ((rEnd - rStart) / 100) * videoMeta.duration;
+  
+    const ffmpeg = ffmpegRef.current;
+  
+    await ffmpeg.writeFile('input.mp4', await fetchFile(videoURL));
+    await ffmpeg.exec([
+      '-ss', String(startTime),  // Set start time
+      '-i', 'input.mp4',
+      '-t', String(duration),    // Set duration
+      'output.mp4'
+    ]);
+  
+    const data = await ffmpeg.readFile('output.mp4');
+    if (videoRef.current) {
+      setTrimVideo(URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' })));
+    }
+  
+    setLoaded(false);
+    setShowTrimVideo(true);
+  };
 
   const handleVideoChange = async (event) => {
     const file = event.target.files?.[0];
@@ -112,21 +143,9 @@ function Video() {
     fileInputRef.current.click();
   };
 
-  const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-  
-    const formattedHours = hours.toString().padStart(2, '0');
-    const formattedMinutes = minutes.toString().padStart(2, '0');
-    const formattedSeconds = remainingSeconds.toString().padStart(2, '0');
-  
-    return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
-  };
-
   const handleLoadedData = async (e) => {
     // console.dir(ref.current);
-
+   console.log('1')
     const el = e.target;
     const meta = {
       name: inputVideoFile.name,
@@ -136,30 +155,20 @@ function Video() {
     };
     console.log({ meta });
     setVideoMeta(meta);
-    const thumbNails = await getThumbnails(meta);
+    const thumbNails = await VideoToFrames.getFrames(
+      videoURL,
+      15,
+      VideoToFramesMethod.totalFrames
+    );
+    console.log(thumbNails)
     setThumbNails(thumbNails);
   };
 
-  const getVideoDuration = async (ffmpeg, file) => {
-    const result = await ffmpeg.exec('-i', file.name);
-    const durationMatch = result.match(/Duration: (\d+:\d+:\d+\.\d+)/);
-    if (durationMatch && durationMatch[1]) {
-      const [hours, minutes, seconds] = durationMatch[1].split(':').map(parseFloat);
-      return hours * 3600 + minutes * 60 + seconds;
-    }
-    return 0;
+  const handleUpdateRange = (func) => {
+    return ({ target: { value } }) => {
+      func(value);
+    };
   };
-
-  const readFileAsBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
-
-
   return (
     <>
     <div className="App min-h-screen flex flex-col items-center justify-center bg-white-low py-10 main-transition"
@@ -203,12 +212,27 @@ function Video() {
         <div className="h-1/4 shimmer-effect p-6 rounded-xl shadow-lg bg-white w-1/2 ">
       </div>
       )}
-
-      {videoURL  && (
+<div className="flex space-x-5 justify-center">
+      {videoURL  && !trimVideo &&(
           <div className="custom-player-container  flex justify-center p-6 rounded-xl shadow-lg bg-white w-1/2">
             <video src={videoURL} ref={videoRef} width={'100%'} height={'100%'} controls onLoadedMetadata={handleLoadedData}></video>
           </div>
         )}
+
+
+{videoURL && <div className='custom-player-container  flex items-center p-6 rounded-xl flex-col shadow-lg bg-white w-1/2'>
+{!trimVideo && loaded && <div className='w-full h-full shimmer-effect bg-gray-400'></div>}
+        {trimVideo && <>
+          <video src={trimVideo} className='' controls></video>
+        <button
+        onClick={()=>{helpers.download(trimVideo)}}
+        className="bg-purple-700 hover:bg-purple-900 text-white py-3 px-6 mt-4 rounded flex space-x-2"
+      >
+        <span>Download ⬇️</span>
+      </button>
+      </>}
+      </div>}
+        </div>
 
 {images?.length <=0 && loading === true && (
   <div className="output flex overflow-x-scroll mt-5 mx-44 space-x-3">
@@ -222,28 +246,25 @@ function Video() {
   </div>
 )}
 
-<p ref={messageRef}></p>
-{images?.length > 0 && (
-        <div className="output flex mt-5 mx-44 border-2 border-yellow-500">
-          {images.map((imageUrl, index) => (
-              <img src={imageUrl} alt="" className='w-20 object-contain' />
-          ))}
-        </div>
-      )}
+{!trimVideo && <RangeInput
+rEnd={rEnd}
+rStart={rStart}
+handleUpdaterEnd={handleUpdateRange(setRend)}
+handleUpdaterStart={handleUpdateRange(setRstart)}
+loading={thumbnailIsProcessing}
+videoMeta={videoMeta}
+thumbNails={thumbNails}
+/>}
 
-{ images?.length > 0 && <button
+<p ref={messageRef}></p>
+
+{ images?.length > 0 && !trimVideo && <button
         onClick={transcode}
         className="bg-purple-700 hover:bg-purple-900 text-white py-3 px-6 mt-4 rounded flex space-x-2"
       >
         <span>Trim Video ✂️</span>
       </button>}
-      {loaded && (
-        <div className='w-1/5 rounded-md h-40 mt-5 shimmer-effect bg-gray-400'></div>
-      )}
 
-    {trimVideo && <div className='aspect-video mt-5 w-1/5'>
-        <video src={trimVideo} className='' controls></video>
-      </div>}
     </div>
     </>
   );
