@@ -7,6 +7,7 @@
     "@ffmpeg/util": "^0.12.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
+    "firebase": "^10.7.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-player": "^2.13.0",
@@ -20,12 +21,6 @@
     "eject": "react-scripts eject",
     "build:css": "tailwindcss build -o ./src/index.css",
     "watch:css": "tailwindcss build -o ./src/index.css --watch"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [
