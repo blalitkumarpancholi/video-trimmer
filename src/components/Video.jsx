@@ -64,6 +64,8 @@ function Video() {
   // }
 
   const transcode = async () => {
+    setTrimVideo(null)
+    setLoaded(true)
     await load();
     setShowTrimVideo(false);
   
@@ -74,10 +76,15 @@ function Video() {
   
     await ffmpeg.writeFile('input.mp4', await fetchFile(videoURL));
     await ffmpeg.exec([
-      '-ss', String(startTime),  // Set start time
-      '-i', 'input.mp4',
-      '-t', String(duration),    // Set duration
-      'output.mp4'
+      '-ss', 
+      String(startTime), 
+      '-i', 
+      'input.mp4',
+      '-t',
+       String(duration), 
+       "-c",
+       "copy",
+       'output.mp4'
     ]);
   
     const data = await ffmpeg.readFile('output.mp4');
@@ -169,6 +176,9 @@ function Video() {
       func(value);
     };
   };
+
+  
+
   return (
     <>
     <div className="App min-h-screen flex flex-col items-center justify-center bg-white-low py-10 main-transition"
@@ -198,7 +208,7 @@ function Video() {
           ref={fileInputRef}  
         />
 
-        <button className='px-5 py-4 bg-purple-800 text-white font-semibold text-lg rounded-md flex justify-center space-x-2' onClick={handleButtonClick}
+        <button className='px-5 py-4 bg-purple-700 text-white font-semibold text-lg rounded-md flex justify-center space-x-2 hover:bg-purple-900' onClick={handleButtonClick}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -213,7 +223,7 @@ function Video() {
       </div>
       )}
 <div className="flex space-x-5 justify-center">
-      {videoURL  && !trimVideo &&(
+      {videoURL  &&(
           <div className="custom-player-container  flex justify-center p-6 rounded-xl shadow-lg bg-white w-1/2">
             <video src={videoURL} ref={videoRef} width={'100%'} height={'100%'} controls onLoadedMetadata={handleLoadedData}></video>
           </div>
@@ -221,11 +231,11 @@ function Video() {
 
 
 {videoURL && <div className='custom-player-container  flex items-center p-6 rounded-xl flex-col shadow-lg bg-white w-1/2'>
-{!trimVideo && loaded && <div className='w-full h-full shimmer-effect bg-gray-400'></div>}
+{!trimVideo && loaded && <div className='w-1/2 shimmer-effect bg-gray-400'></div>}
         {trimVideo && <>
           <video src={trimVideo} className='' controls></video>
         <button
-        onClick={()=>{helpers.download(trimVideo)}}
+        onClick={()=>{helpers.download(trimVideo,inputVideoFile.name)}}
         className="bg-purple-700 hover:bg-purple-900 text-white py-3 px-6 mt-4 rounded flex space-x-2"
       >
         <span>Download ⬇️</span>
@@ -246,7 +256,7 @@ function Video() {
   </div>
 )}
 
-{!trimVideo && <RangeInput
+{videoURL && <RangeInput
 rEnd={rEnd}
 rStart={rStart}
 handleUpdaterEnd={handleUpdateRange(setRend)}
@@ -256,11 +266,11 @@ videoMeta={videoMeta}
 thumbNails={thumbNails}
 />}
 
-<p ref={messageRef}></p>
+{/* <p ref={messageRef}></p> */}
 
-{ images?.length > 0 && !trimVideo && <button
+{ images?.length > 0 && <button
         onClick={transcode}
-        className="bg-purple-700 hover:bg-purple-900 text-white py-3 px-6 mt-4 rounded flex space-x-2"
+        className="bg-purple-700 hover:bg-purple-900 text-white py-3 px-6 mt-10 rounded flex space-x-2"
       >
         <span>Trim Video ✂️</span>
       </button>}

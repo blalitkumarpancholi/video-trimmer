@@ -37,10 +37,10 @@ const readFileAsBase64 = async (file) => {
   });
 };
 
-const download = (url) => {
+const download = (url,fileName) => {
   const link = document.createElement("a");
   link.href = url;
-  link.setAttribute("download", "download");
+  link.setAttribute("download",  `${fileName}`);
   link.click();
 };
 

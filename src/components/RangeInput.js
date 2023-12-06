@@ -25,6 +25,13 @@ export default function RangeInput({
     );
   }
 
+  const durationInSeconds = ((rEnd - rStart) / RANGE_MAX) * videoMeta.duration;
+  const diffSec = helpers.toTimeString(durationInSeconds,false)
+
+  const positionStyle = {
+    left: `${rStart + (rEnd - rStart) / 2}%`,
+  };
+
   return (
     <>
       <div className="range_pack">
@@ -50,6 +57,9 @@ export default function RangeInput({
           >
             <span className="clip_box_des"></span>
             <span className="clip_box_des"></span>
+            <div className="absolute left-[50%] top-[-3.5rem] translate-x-[-50%] translate-y-0">
+          <div className="text-white px-3 py-2 bg-black rounded-lg">{diffSec}</div>
+        </div>
           </div>
 
           <input
